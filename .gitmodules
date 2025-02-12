@@ -1,0 +1,3 @@
+[submodule "externals/nixpkgs"]
+	path = externals/nixpkgs
+	url = https://github.com/wrvsrx/nixpkgs.git
