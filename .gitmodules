@@ -1,3 +1,6 @@
 [submodule "externals/nixpkgs"]
 	path = externals/nixpkgs
 	url = https://github.com/wrvsrx/nixpkgs.git
+[submodule "externals/home-manager"]
+	path = externals/home-manager
+	url = https://github.com/wrvsrx/home-manager.git
