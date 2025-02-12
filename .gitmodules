@@ -4,3 +4,6 @@
 [submodule "externals/home-manager"]
 	path = externals/home-manager
 	url = https://github.com/wrvsrx/home-manager.git
+[submodule "externals/nixvim"]
+	path = externals/nixvim
+	url = https://github.com/wrvsrx/nixvim.git
