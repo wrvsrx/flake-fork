@@ -7,3 +7,6 @@
 [submodule "externals/nixvim"]
 	path = externals/nixvim
 	url = https://github.com/wrvsrx/nixvim.git
+[submodule "externals/stylix"]
+	path = externals/stylix
+	url = https://github.com/wrvsrx/stylix.git
