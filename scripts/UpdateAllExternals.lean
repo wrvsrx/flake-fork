@@ -1,36 +1,36 @@
-def isGitClean (dir : String) : IO Bool := do
-  let stdout ← IO.Process.run {
-    cmd := "git"
-    args := #["status", "--porcelain", dir]
-  }
-  pure stdout.trim.isEmpty
+namespace Git
+def getOutput
+  (args: Array String)
+  (cwd : Option System.FilePath := none)
+  : IO String
+:= do
+  IO.Process.run { cmd := "git", args := args, cwd := cwd }
 
-def isOnBranch (dir : System.FilePath) (branch : String) : IO Bool := do
-  let stdout ← IO.Process.run {
-    cmd := "git"
-    args := #["branch", "--show-current"]
-    cwd := dir
-  }
-  pure $ stdout.trim == branch
-
-def runProcess (args : IO.Process.SpawnArgs) := do
-  let code ← (← IO.Process.spawn args).wait
+def runProcess
+  (args: Array String)
+  (cwd : Option System.FilePath := none)
+  : IO Unit
+:= do
+  let code ← (← IO.Process.spawn { cmd := "git", args := args, cwd := cwd }).wait
   if code != 0
   then throw <| IO.userError s!"git exited with code {code}"
 
-def getGitRemotes (dir : System.FilePath) : IO (Array (String × String)) := do
-  let output ← IO.Process.run {
-    cmd := "git"
-    args := #["remote"]
-    cwd := dir
-  }
+def isClean (dir : System.FilePath) : IO Bool := do
+  pure (← getOutput #["status", "--porcelain", dir.toString]).trim.isEmpty
+
+def isOnBranch (dir : System.FilePath) (branch : String) : IO Bool := do
+  pure $ (← getOutput #["branch", "--show-current"] dir).trim == branch
+
+def getRemotes (dir : System.FilePath) : IO (Array (String × String)) := do
+  let output ← getOutput #["remote"] dir
   let remotes := String.splitOn (output.take (output.length - 1)) "\n"
   let remotesWithUrl ← remotes.mapM (
     fun remote => do
-      let output ← IO.Process.run { cmd := "git", args := #["remote", "get-url", remote], cwd := dir }
-      pure (remote, output)
+      pure (remote, ← getOutput #["remote", "get-url", remote] dir)
   )
   pure (Array.mk remotesWithUrl)
+end Git
+
 
 structure FlakeRepo : Type where
   name: String
@@ -41,35 +41,51 @@ def ensureRepoUpToDate (repo: FlakeRepo) : IO Unit := do
   let dir := System.FilePath.mk "externals" / repo.name
   let patchedBranchName := "patched-" ++ repo.upstreamBranch
 
-  if not (← isOnBranch dir patchedBranchName)
-  then runProcess { cmd := "git", args := #["checkout", patchedBranchName], cwd := some dir }
+  if not (← Git.isOnBranch dir patchedBranchName)
+  then Git.runProcess #["checkout", patchedBranchName] dir
 
-  let remotes ← getGitRemotes dir
+  let remotes ← Git.getRemotes dir
 
   if (remotes.find? (fun (name, _) => name == "upstream")).isNone
-  then runProcess { cmd := "git", args := #["remote", "add", "upstream", repo.upstreamURL], cwd := dir }
+  then Git.runProcess #["remote", "add", "upstream", repo.upstreamURL] dir
 
-  runProcess { cmd := "git", args := #["pull"], cwd := dir }
+  Git.runProcess #["pull"] dir
 
 def ensureUpToDate (repos : Array FlakeRepo) : IO Bool := do
   repos.forM ensureRepoUpToDate 
-  _ ← IO.Process.run { cmd := "git", args := #["pull"] }
-  pure (← isGitClean "externals") 
+  Git.runProcess #["pull"]
+  pure (← Git.isClean "externals") 
 
 def updatePatchedBranch (repo: FlakeRepo) : IO Unit := do
   let dir := System.FilePath.mk "externals" / repo.name
-  runProcess { cmd := "git", args := #["fetch", "upstream", "--prune", "--tags"], cwd := dir }
-  runProcess { cmd := "git", args := #["rebase", s!"upstream/{repo.upstreamBranch}"], cwd := dir }
-  if not (← isGitClean dir.toString)
+  Git.runProcess #["fetch", "upstream", "--prune", "--tags"] dir 
+  Git.runProcess #["rebase", s!"upstream/{repo.upstreamBranch}"] dir
+  if not (← Git.isClean dir.toString)
   then do
-    runProcess { cmd := "git", args := #["add", dir.toString]}
-    runProcess { cmd := "git", args := #["commit", "-m", s!"chore({dir.toString}): update it"]}
+    Git.runProcess #["add", dir.toString]
+    Git.runProcess #["commit", "-m", s!"chore({dir.toString}): update it"]
 
 def repos : Array FlakeRepo := #[
-  { name := "nixpkgs", upstreamURL := "https://github.com/NixOS/nixpkgs", upstreamBranch := "nixos-unstable" },
-  { name := "home-manager", upstreamURL := "https://github.com/nix-community/home-manager", upstreamBranch := "master" },
-  { name := "nixvim", upstreamURL := "https://github.com/nix-community/nixvim", upstreamBranch := "main" },
-  { name := "stylix", upstreamURL := "https://github.com/nix-community/stylix", upstreamBranch := "master" },
+  {
+    name := "nixpkgs",
+    upstreamURL := "https://github.com/NixOS/nixpkgs",
+    upstreamBranch := "nixos-unstable"
+  },
+  {
+    name := "home-manager",
+    upstreamURL := "https://github.com/nix-community/home-manager",
+    upstreamBranch := "master"
+  },
+  {
+    name := "nixvim",
+    upstreamURL := "https://github.com/nix-community/nixvim",
+    upstreamBranch := "main"
+  },
+  {
+    name := "stylix",
+    upstreamURL := "https://github.com/nix-community/stylix",
+    upstreamBranch := "master"
+  },
 ]
 
 def main : IO Unit := do
