@@ -58,8 +58,8 @@ def ensureUpToDate (repos : Array FlakeRepo) : IO Bool := do
 
 def updatePatchedBranch (repo: FlakeRepo) : IO Unit := do
   let dir := System.FilePath.mk "externals" / repo.name
-  Git.runProcess "." #["fetch", "upstream", "--prune", "--tags"]
-  Git.runProcess "." #["rebase", s!"upstream/{repo.upstreamBranch}"]
+  Git.runProcess dir #["fetch", "upstream", "--prune", "--tags"]
+  Git.runProcess dir #["rebase", s!"upstream/{repo.upstreamBranch}"]
   Git.runProcess dir #["push"]
   if not (← Git.isClean dir.toString)
   then do
