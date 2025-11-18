@@ -1,14 +1,14 @@
 namespace Git
 def getOutput
+  (cwd : Option System.FilePath)
   (args: Array String)
-  (cwd : Option System.FilePath := none)
   : IO String
 := do
   IO.Process.run { cmd := "git", args := args, cwd := cwd }
 
 def runProcess
+  (cwd : Option System.FilePath)
   (args: Array String)
-  (cwd : Option System.FilePath := none)
   : IO Unit
 := do
   let code ← (← IO.Process.spawn { cmd := "git", args := args, cwd := cwd }).wait
@@ -16,17 +16,17 @@ def runProcess
   then throw <| IO.userError s!"git exited with code {code}"
 
 def isClean (dir : System.FilePath) : IO Bool := do
-  pure (← getOutput #["status", "--porcelain", dir.toString]).trim.isEmpty
+  pure (← getOutput "." #["status", "--porcelain", dir.toString]).trim.isEmpty
 
 def isOnBranch (dir : System.FilePath) (branch : String) : IO Bool := do
-  pure $ (← getOutput #["branch", "--show-current"] dir).trim == branch
+  pure $ (← getOutput dir #["branch", "--show-current"]).trim == branch
 
 def getRemotes (dir : System.FilePath) : IO (Array (String × String)) := do
-  let output ← getOutput #["remote"] dir
+  let output ← getOutput dir #["remote"]
   let remotes := String.splitOn (output.take (output.length - 1)) "\n"
   let remotesWithUrl ← remotes.mapM (
     fun remote => do
-      pure (remote, ← getOutput #["remote", "get-url", remote] dir)
+      pure (remote, ← getOutput dir #["remote", "get-url", remote])
   )
   pure (Array.mk remotesWithUrl)
 end Git
@@ -42,29 +42,29 @@ def ensureRepoUpToDate (repo: FlakeRepo) : IO Unit := do
   let patchedBranchName := "patched-" ++ repo.upstreamBranch
 
   if not (← Git.isOnBranch dir patchedBranchName)
-  then Git.runProcess #["checkout", patchedBranchName] dir
+  then Git.runProcess dir #["checkout", patchedBranchName]
 
   let remotes ← Git.getRemotes dir
 
   if (remotes.find? (fun (name, _) => name == "upstream")).isNone
-  then Git.runProcess #["remote", "add", "upstream", repo.upstreamURL] dir
+  then Git.runProcess dir #["remote", "add", "upstream", repo.upstreamURL]
 
-  Git.runProcess #["pull"] dir
+  Git.runProcess dir #["pull"]
 
 def ensureUpToDate (repos : Array FlakeRepo) : IO Bool := do
   repos.forM ensureRepoUpToDate 
-  Git.runProcess #["pull"]
+  Git.runProcess "." #["pull"]
   pure (← Git.isClean "externals") 
 
 def updatePatchedBranch (repo: FlakeRepo) : IO Unit := do
   let dir := System.FilePath.mk "externals" / repo.name
-  Git.runProcess #["fetch", "upstream", "--prune", "--tags"] dir
-  Git.runProcess #["rebase", s!"upstream/{repo.upstreamBranch}"] dir
-  Git.runProcess #["push"] dir
+  Git.runProcess "." #["fetch", "upstream", "--prune", "--tags"]
+  Git.runProcess "." #["rebase", s!"upstream/{repo.upstreamBranch}"]
+  Git.runProcess dir #["push"]
   if not (← Git.isClean dir.toString)
   then do
-    Git.runProcess #["add", dir.toString]
-    Git.runProcess #["commit", "-m", s!"chore({dir.toString}): update it"]
+    Git.runProcess "." #["add", dir.toString]
+    Git.runProcess "." #["commit", "-m", s!"chore({dir.toString}): update it"]
 
 def repos : Array FlakeRepo := #[
   {
