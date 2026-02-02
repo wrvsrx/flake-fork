@@ -16,14 +16,14 @@ def runProcess
   then throw <| IO.userError s!"git exited with code {code}"
 
 def isClean (dir : System.FilePath) : IO Bool := do
-  pure (← getOutput "." #["status", "--porcelain", dir.toString]).trim.isEmpty
+  pure (← getOutput "." #["status", "--porcelain", dir.toString]).trimAscii.isEmpty
 
 def isOnBranch (dir : System.FilePath) (branch : String) : IO Bool := do
-  pure $ (← getOutput dir #["branch", "--show-current"]).trim == branch
+  pure $ (← getOutput dir #["branch", "--show-current"]).trimAscii == branch
 
 def getRemotes (dir : System.FilePath) : IO (Array (String × String)) := do
   let output ← getOutput dir #["remote"]
-  let remotes := String.splitOn (output.take (output.length - 1)) "\n"
+  let remotes := String.splitOn (output.take (output.length - 1)).copy "\n"
   let remotesWithUrl ← remotes.mapM (
     fun remote => do
       pure (remote, ← getOutput dir #["remote", "get-url", remote])
