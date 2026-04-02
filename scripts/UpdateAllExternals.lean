@@ -53,7 +53,6 @@ def ensureRepoUpToDate (repo: FlakeRepo) : IO Unit := do
 
 def ensureUpToDate (repos : Array FlakeRepo) : IO Bool := do
   repos.forM ensureRepoUpToDate 
-  Git.runProcess "." #["pull"]
   pure (← Git.isClean "externals") 
 
 def updatePatchedBranch (repo: FlakeRepo) : IO Unit := do
