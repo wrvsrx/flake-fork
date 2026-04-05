@@ -77,11 +77,6 @@ def repos : Array FlakeRepo := #[
     upstreamBranch := "master"
   },
   {
-    name := "nixvim",
-    upstreamURL := "https://github.com/nix-community/nixvim",
-    upstreamBranch := "main"
-  },
-  {
     name := "stylix",
     upstreamURL := "https://github.com/nix-community/stylix",
     upstreamBranch := "master"
