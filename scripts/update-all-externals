@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+env --chdir=scripts/UpdateAllExternals lake build && ./scripts/UpdateAllExternals/.lake/build/bin/updateallexternals
