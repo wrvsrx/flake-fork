@@ -1,0 +1,10 @@
+name = "UpdateAllExternals"
+version = "0.1.0"
+defaultTargets = ["updateallexternals"]
+
+[[lean_lib]]
+name = "UpdateAllExternals"
+
+[[lean_exe]]
+name = "updateallexternals"
+root = "Main"
