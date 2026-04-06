@@ -36,10 +36,13 @@ structure FlakeRepo : Type where
   name: String
   upstreamURL: String
   upstreamBranch: String
+  originBranch: Option String := none
 
 def ensureRepoUpToDate (repo: FlakeRepo) : IO Unit := do
   let dir := System.FilePath.mk "externals" / repo.name
-  let patchedBranchName := "patched-" ++ repo.upstreamBranch
+  let patchedBranchName := match repo.originBranch with
+    | some originBranch => originBranch
+    | none => "patched-" ++ repo.upstreamBranch
 
   if not (← Git.isOnBranch dir patchedBranchName)
   then Git.runProcess dir #["checkout", patchedBranchName]
@@ -69,6 +72,7 @@ def repos : Array FlakeRepo := #[
   {
     name := "nixpkgs",
     upstreamURL := "https://github.com/NixOS/nixpkgs",
+    originBranch := some "patched-nixos-unstable"
     upstreamBranch := "nixos-unstable"
   },
   {
