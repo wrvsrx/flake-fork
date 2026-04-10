@@ -90,4 +90,4 @@ def repos : Array FlakeRepo := #[
 def main : IO Unit := do
   if ← ensureUpToDate repos
   then repos.forM updatePatchedBranch
-  else throw (IO.Error.userError "")
+  else throw (IO.Error.userError "fail to ensure up to date")
