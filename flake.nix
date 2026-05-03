@@ -13,7 +13,7 @@
               pkgs = import ./externals/nixpkgs { inherit system; };
             in
             {
-              default = pkgs.mkShell { nativeBuildInputs = [ pkgs.lean4 ]; };
+              default = pkgs.mkShell { nativeBuildInputs = [ pkgs.leanPackages.lean4 ]; };
             };
         }) systems
       );
