@@ -4,6 +4,9 @@
 [submodule "externals/home-manager"]
 	path = externals/home-manager
 	url = https://github.com/wrvsrx/home-manager.git
+[submodule "externals/sops-nix"]
+	path = externals/sops-nix
+	url = https://github.com/wrvsrx/sops-nix.git
 [submodule "externals/stylix"]
 	path = externals/stylix
 	url = https://github.com/wrvsrx/stylix.git
